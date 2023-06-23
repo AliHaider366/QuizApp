@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
+    tools:context=".fragments.QuestionFragment">
+
+
+    <RelativeLayout
+        android:id="@+id/relativeLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.mikhaellopez.circularprogressbar.CircularProgressBar
+            android:id="@+id/circularProgressBar"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            app:cpb_background_progressbar_color="@color/textColor"
+            app:cpb_background_progressbar_width="1dp"
+            app:cpb_progress_direction="to_right"
+            app:cpb_progressbar_color="@color/textColor"
+            app:cpb_progressbar_width="3dp"
+            app:cpb_round_border="false" />
+
+
+        <TextView
+            android:id="@+id/textViewTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="15"
+            android:textColor="@color/textColor"
+            android:textSize="16sp" />
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayoutStart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        app:layout_constraintBottom_toTopOf="@id/linearLayoutEnd"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/question_header"
+            android:textSize="20sp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/textColor"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/current_score"
+            android:textSize="18sp"
+            android:textColor="@color/textColor"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayoutEnd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="20dp"
+        android:padding="5dp"
+        android:background="@drawable/button_background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/linearLayoutStart"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1- What is your age?"
+            android:paddingBottom="10dp"
+            android:textSize="16sp"
+            android:textColor="@color/backgroundColor"/>
+
+        <Button
+            android:id="@+id/buttonOptionA"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="My age is 20"
+            app:backgroundTint="@null"
+            android:background="@drawable/answer_button_background"
+            android:textColor="@color/textColor"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="5dp"
+            android:gravity="left|center"/>
+        <Button
+            android:id="@+id/buttonOptionB"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="My age is 22"
+            app:backgroundTint="@null"
+            android:background="@drawable/answer_button_background"
+            android:textColor="@color/textColor"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="5dp"
+            android:gravity="left|center"/>
+        <Button
+            android:id="@+id/buttonOptionC"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="My age is 24"
+            app:backgroundTint="@null"
+            android:background="@drawable/answer_button_background"
+            android:textColor="@color/textColor"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="5dp"
+            android:gravity="left|center"/>
+        <Button
+            android:id="@+id/buttonOptionD"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="My age is 26"
+            app:backgroundTint="@null"
+            android:background="@drawable/answer_button_background"
+            android:textColor="@color/textColor"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="5dp"
+            android:gravity="left|center"/>
+        <Button
+            android:id="@+id/buttonOptionE"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="My age is 28"
+            app:backgroundTint="@null"
+            android:background="@drawable/answer_button_background"
+            android:textColor="@color/textColor"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginBottom="10dp"
+            android:gravity="left|center"/>
+
+        <TextView
+            android:id="@+id/textViewAnswerDecision"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/correct_answer"
+            android:textColor="@color/backgroundColor"
+            android:layout_gravity="center"/>
+
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonSubmit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Submit"
+        android:background="@drawable/button_background"
+        app:backgroundTint="@null"
+        android:textColor="@color/backgroundColor"
+        app:layout_constraintTop_toBottomOf="@id/linearLayoutEnd"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
