@@ -1,6 +1,5 @@
 package com.example.quizapp.viewmodel
 
-import androidx.databinding.Bindable
 import androidx.databinding.Observable
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -12,7 +11,6 @@ import com.example.quizapp.retrofit.QuestionApi
 import com.example.quizapp.retrofit.RetrofitHelper
 import kotlinx.coroutines.launch
 import retrofit2.Response
-import java.text.FieldPosition
 
 class QuestionViewModel : ViewModel(), Observable {
 
@@ -24,7 +22,9 @@ class QuestionViewModel : ViewModel(), Observable {
     private var questionsList: MutableLiveData<List<Question>> = MutableLiveData()
     var list: MutableLiveData<Question> = MutableLiveData()
 
-    var score = MutableLiveData(0)
+    var yourScore = MutableLiveData<String>()
+
+    var questionScore = MutableLiveData<String>()
 
     var question = MutableLiveData<String>()
 
@@ -41,6 +41,8 @@ class QuestionViewModel : ViewModel(), Observable {
 
     init {
         getQuestions()
+        yourScore = MutableLiveData("Your Score : 0")
+        yourScore = MutableLiveData("Score : 0")
         optionA = MutableLiveData("")
         optionB = MutableLiveData("")
         optionC = MutableLiveData("")

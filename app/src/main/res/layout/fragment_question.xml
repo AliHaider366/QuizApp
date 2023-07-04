@@ -71,7 +71,8 @@
                 android:id="@+id/textViewCurrentScore"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/current_score"
+                android:text="@{questionviewmodel.yourScore}"
+                android:hint="@string/current_score"
                 android:textColor="@color/textColor"
                 android:textSize="18sp" />
 
@@ -102,6 +103,18 @@
                 android:id="@+id/imageViewImageUrl"
                 android:layout_width="100dp"
                 android:layout_height="100dp"
+                android:layout_gravity="center_horizontal"
+                />
+
+
+            <TextView
+                android:id="@+id/textViewQuestionScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{questionviewmodel.questionScore}"
+                android:paddingBottom="5dp"
+                android:textColor="@color/backgroundColor"
+                android:textSize="14sp"
                 android:layout_gravity="center_horizontal"
                 />
 
@@ -175,7 +188,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/correct_answer"
+                android:text=""
                 android:textColor="@color/backgroundColor" />
 
 

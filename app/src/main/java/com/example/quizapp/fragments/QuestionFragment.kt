@@ -7,13 +7,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.quizapp.R
 import com.example.quizapp.databinding.FragmentQuestionBinding
+import com.example.quizapp.model.Question
 import com.example.quizapp.viewmodel.QuestionViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -28,11 +29,17 @@ class QuestionFragment : Fragment() {
 
     private var countDownTimer: CountDownTimer? = null
 
+    private lateinit var answerListHashMap: HashMap<String, String>
+    private lateinit var answerList: MutableList<String>
+    private lateinit var rightAnswerList: List<String>
+
     private var selectedAnswer: String = "Z"
     private var rightAnswer: String = "Z"
-    private var multiChoice : Boolean = false
+    private var multiChoice: Boolean = false
 
-    private var currenScore : Int = 0
+    private var totalScore: Int = 0
+    private var score: Int = 0
+    private var numberOfRightMultiChoiceAnswer: Int = 0
 
     private var size = 0
 
@@ -43,9 +50,13 @@ class QuestionFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         questionViewModel = ViewModelProvider(this)[QuestionViewModel::class.java]
-
+        binding.circularProgressBar.progress = 100F
+        binding.questionviewmodel = questionViewModel
+        binding.lifecycleOwner = this
+        answerListHashMap = HashMap()
+        answerList = mutableListOf()
+        rightAnswerList = listOf()
     }
 
     override fun onCreateView(
@@ -53,110 +64,277 @@ class QuestionFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-        binding.questionviewmodel = questionViewModel
-        binding.lifecycleOwner = this
-
-        binding.circularProgressBar.progress = 100F
-
 
         questionViewModel.list.observe(viewLifecycleOwner) {
+            selectedAnswer = ""
+            rightAnswer = ""
+            numberOfRightMultiChoiceAnswer = 0
+            answerListHashMap = HashMap()
+            answerList = mutableListOf()
+            rightAnswerList = listOf()
             defaultColorAllButtons()
             enableAllButtons()
-            size = questionViewModel.getSize()
-            binding.textViewQuestionNumber.text = "Question $QUESTION_NUMBER of $size"
-            QUESTION_NUMBER++
-            questionViewModel.question.value = it.question
-            questionViewModel.optionA.value = it.answer.a
-            questionViewModel.optionB.value = it.answer.b
-            rightAnswer = it.correctAnswer
-            multiChoice = it.type == "multiple-choice"
-            currenScore = it.score
-            if (it.answer.c == null) {
-                binding.buttonOptionC.visibility = View.GONE
-            } else {
-                binding.buttonOptionC.visibility = View.VISIBLE
-                questionViewModel.optionC.value = it.answer.c
-            }
-            if (it.answer.d == null) {
-                binding.buttonOptionD.visibility = View.GONE
-            } else {
-                binding.buttonOptionD.visibility = View.VISIBLE
-                questionViewModel.optionD.value = it.answer.d
-            }
-            if (it.answer.e == null) {
-                binding.buttonOptionE.visibility = View.GONE
-            } else {
-                binding.buttonOptionE.visibility = View.VISIBLE
-                questionViewModel.optionE.value = it.answer.e
-            }
-            if (it.questionImageUrl == null) {
-                binding.imageViewImageUrl.visibility = View.GONE
-            } else {
-                binding.imageViewImageUrl.visibility = View.VISIBLE
-                Glide.with(this).load(it.questionImageUrl).into(binding.imageViewImageUrl)
-            }
+            showDataIntoViews(it)
             countDownTimer?.cancel()
             startTimer(15)
         }
 
+
         binding.buttonOptionA.setOnClickListener {
 
-            selectedAnswer = "A"
-            disableAllButtons()
-            if (isYourAnswerCorrect()) {
-                goToNextQuestion()
+            if (multiChoice) {
+                selectedAnswer = answerList[0]
+                if (numberOfRightMultiChoiceAnswer > 0) {
+                    if (checkSelection()) {
+                        binding.buttonOptionA.setBackgroundResource(R.drawable.right_answer_background)
+                    } else {
+                        binding.buttonOptionA.setBackgroundResource(R.drawable.wrong_answer_background)
+                        binding.textViewAnswerDecision.text = "Your answer is incorrect"
+                        binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
+                        checkForRightOrWrongAnswers()
+                    }
+                } else {
+                    checkForRightOrWrongAnswers()
+                }
             } else {
-                binding.buttonOptionA.setBackgroundResource(R.drawable.wrong_answer_background)
-                goToNextQuestion()
+                selectedAnswer = questionViewModel.optionA.value.toString()
+                buttonClickWhenSingleChoice()
             }
 
         }
 
         binding.buttonOptionB.setOnClickListener {
-            selectedAnswer = "B"
-            disableAllButtons()
-            if (isYourAnswerCorrect()) {
-                goToNextQuestion()
+            if (multiChoice) {
+                selectedAnswer = answerList[1]
+                if (numberOfRightMultiChoiceAnswer > 0) {
+                    if (checkSelection()) {
+                        binding.buttonOptionB.setBackgroundResource(R.drawable.right_answer_background)
+                    } else {
+                        binding.buttonOptionB.setBackgroundResource(R.drawable.wrong_answer_background)
+                        binding.textViewAnswerDecision.text = "Your answer is incorrect"
+                        binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
+                        checkForRightOrWrongAnswers()
+                    }
+                } else {
+                    disableAllButtons()
+                    checkForRightOrWrongAnswers()
+                }
             } else {
-                binding.buttonOptionB.setBackgroundResource(R.drawable.wrong_answer_background)
-                goToNextQuestion()
+                selectedAnswer = questionViewModel.optionB.value.toString()
+                buttonClickWhenSingleChoice()
             }
         }
 
         binding.buttonOptionC.setOnClickListener {
-            selectedAnswer = "C"
-            disableAllButtons()
-            if (isYourAnswerCorrect()) {
-                goToNextQuestion()
+            if (multiChoice) {
+                selectedAnswer = answerList[2]
+                if (numberOfRightMultiChoiceAnswer > 0) {
+                    if (checkSelection()) {
+                        binding.buttonOptionC.setBackgroundResource(R.drawable.right_answer_background)
+                    } else {
+                        binding.buttonOptionC.setBackgroundResource(R.drawable.wrong_answer_background)
+                        binding.textViewAnswerDecision.text = "Your answer is incorrect"
+                        binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
+                        checkForRightOrWrongAnswers()
+                    }
+                } else {
+                    disableAllButtons()
+                    checkForRightOrWrongAnswers()
+                }
             } else {
-                binding.buttonOptionC.setBackgroundResource(R.drawable.wrong_answer_background)
-                goToNextQuestion()
+                selectedAnswer = questionViewModel.optionC.value.toString()
+                buttonClickWhenSingleChoice()
             }
         }
 
         binding.buttonOptionD.setOnClickListener {
-            selectedAnswer = "D"
-            disableAllButtons()
-            if (isYourAnswerCorrect()) {
-                goToNextQuestion()
+            if (multiChoice) {
+                selectedAnswer = answerList[3]
+                if (numberOfRightMultiChoiceAnswer > 0) {
+                    if (checkSelection()) {
+                        binding.buttonOptionD.setBackgroundResource(R.drawable.right_answer_background)
+                    } else {
+                        binding.buttonOptionD.setBackgroundResource(R.drawable.wrong_answer_background)
+                        binding.textViewAnswerDecision.text = "Your answer is incorrect"
+                        binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
+                        checkForRightOrWrongAnswers()
+                    }
+                } else {
+                    disableAllButtons()
+                    checkForRightOrWrongAnswers()
+                }
             } else {
-                binding.buttonOptionD.setBackgroundResource(R.drawable.wrong_answer_background)
-                goToNextQuestion()
+                selectedAnswer = questionViewModel.optionD.value.toString()
+                buttonClickWhenSingleChoice()
             }
         }
 
         binding.buttonOptionE.setOnClickListener {
-            selectedAnswer = "E"
-            disableAllButtons()
-            if (isYourAnswerCorrect()) {
-                goToNextQuestion()
+            if (multiChoice) {
+                selectedAnswer = answerList[4]
+                if (numberOfRightMultiChoiceAnswer > 0) {
+                    if (checkSelection()) {
+                        binding.buttonOptionE.setBackgroundResource(R.drawable.right_answer_background)
+                    } else {
+                        binding.buttonOptionE.setBackgroundResource(R.drawable.wrong_answer_background)
+                        binding.textViewAnswerDecision.text = "Your answer is incorrect"
+                        binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
+                        checkForRightOrWrongAnswers()
+                    }
+                } else {
+                    disableAllButtons()
+                    checkForRightOrWrongAnswers()
+                }
             } else {
-                binding.buttonOptionE.setBackgroundResource(R.drawable.wrong_answer_background)
-                goToNextQuestion()
+                selectedAnswer = questionViewModel.optionE.value.toString()
+                buttonClickWhenSingleChoice()
             }
         }
 
         return binding.root
+    }
+
+    private fun checkForRightOrWrongAnswers() {
+        if (rightAnswer.isNotEmpty()) {
+            for (item in answerList) {
+                if (item in rightAnswer) {
+                    changeButtonColor(answerList.indexOf(item))
+                }
+                rightAnswer += answerListHashMap[item]
+            }
+        }
+        disableAllButtons()
+        goToNextQuestion()
+    }
+
+    private fun changeButtonColor(indexOf: Int) {
+        when (indexOf) {
+            0 -> {
+                binding.buttonOptionA.setBackgroundResource(R.drawable.right_answer_background)
+            }
+
+            1 -> {
+                binding.buttonOptionB.setBackgroundResource(R.drawable.right_answer_background)
+            }
+
+            2 -> {
+                binding.buttonOptionC.setBackgroundResource(R.drawable.right_answer_background)
+            }
+
+            3 -> {
+                binding.buttonOptionD.setBackgroundResource(R.drawable.right_answer_background)
+            }
+
+            4 -> {
+                binding.buttonOptionE.setBackgroundResource(R.drawable.right_answer_background)
+            }
+
+        }
+    }
+
+    private fun checkSelection(): Boolean {
+        numberOfRightMultiChoiceAnswer--
+        var flag: Boolean = false
+        if (selectedAnswer in rightAnswer) {
+            rightAnswer = rightAnswer.replace(selectedAnswer, "")
+            flag = true
+        }
+        if (numberOfRightMultiChoiceAnswer == 0) {
+            disableAllButtons()
+            if (rightAnswer.isEmpty()) {
+                binding.textViewAnswerDecision.text = "Your answer is correct"
+                binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.greenColor))
+            }
+            if (flag) {
+                goToNextQuestion()
+            }
+        }
+        return flag
+    }
+
+    private fun buttonClickWhenSingleChoice() {
+        disableAllButtons()
+        if (isYourAnswerCorrect()) {
+            markRightAnswer()
+            goToNextQuestion()
+        } else {
+            markRightAnswer()
+            ifSelectedAnswerWrong()
+            goToNextQuestion()
+        }
+    }
+
+    private fun showDataIntoViews(it: Question) {
+        addDataToList(it)
+        size = questionViewModel.getSize()
+        binding.textViewQuestionNumber.text = "Question $QUESTION_NUMBER of $size"
+        QUESTION_NUMBER++
+        questionViewModel.question.value = it.question + " (${it.type})"
+        questionViewModel.optionA.value = answerList[0]
+        questionViewModel.optionB.value = answerList[1]
+        multiChoice = it.type == "multiple-choice"
+        questionViewModel.questionScore.value = "Score : ${it.score.toString()}"
+        score = it.score
+        questionViewModel.yourScore.value = "Your Score : $totalScore"
+        if (it.answer.c == null) {
+            binding.buttonOptionC.visibility = View.GONE
+        } else {
+            binding.buttonOptionC.visibility = View.VISIBLE
+            questionViewModel.optionC.value = answerList[2]
+        }
+        if (it.answer.d == null) {
+            binding.buttonOptionD.visibility = View.GONE
+        } else {
+            binding.buttonOptionD.visibility = View.VISIBLE
+            questionViewModel.optionD.value = answerList[3]
+        }
+        if (it.answer.e == null) {
+            binding.buttonOptionE.visibility = View.GONE
+        } else {
+            binding.buttonOptionE.visibility = View.VISIBLE
+            questionViewModel.optionE.value = answerList[4]
+        }
+        if (it.questionImageUrl == null) {
+            binding.imageViewImageUrl.visibility = View.GONE
+        } else {
+            binding.imageViewImageUrl.visibility = View.VISIBLE
+            Glide.with(this).load(it.questionImageUrl).into(binding.imageViewImageUrl)
+        }
+        if (multiChoice || size == QUESTION_NUMBER) {
+            rightAnswer = it.correctAnswer
+            addUpAllRightAnswers()
+        } else {
+            rightAnswer = answerListHashMap[it.correctAnswer].toString()
+        }
+        binding.textViewAnswerDecision.text = ""
+    }
+
+    private fun addUpAllRightAnswers() {
+        rightAnswerList = rightAnswer.split(",")
+        numberOfRightMultiChoiceAnswer = rightAnswerList.size
+        rightAnswer = ""
+        for (item in rightAnswerList) {
+            rightAnswer += answerListHashMap[item]
+        }
+    }
+
+    private fun addDataToList(it: Question) {
+        answerListHashMap.clear()
+        answerListHashMap["A"] = it.answer.a
+        answerListHashMap["B"] = it.answer.b
+        if (it.answer.c != null) {
+            answerListHashMap["C"] = it.answer.c
+        }
+        if (it.answer.d != null) {
+            answerListHashMap["D"] = it.answer.d
+        }
+        if (it.answer.e != null) {
+            answerListHashMap["E"] = it.answer.e
+        }
+        answerListHashMap.entries.shuffled()
+        answerList.clear()
+        answerList = answerListHashMap.values.toMutableList()
+
     }
 
     private fun disableAllButtons() {
@@ -192,7 +370,6 @@ class QuestionFragment : Fragment() {
     private fun wrongAnswer() {
         binding.textViewAnswerDecision.text = "Your answer is incorrect"
         binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.redColor))
-        markRightAnswer()
     }
 
     private fun isYourAnswerCorrect(): Boolean {
@@ -200,7 +377,7 @@ class QuestionFragment : Fragment() {
         return if (selectedAnswer == rightAnswer) {
             binding.textViewAnswerDecision.text = "Your answer is correct"
             binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.greenColor))
-            //questionViewModel.score.value = questionViewModel.score.value!!.toInt() + currenScore
+            totalScore += score
             true
         } else {
             wrongAnswer()
@@ -225,7 +402,12 @@ class QuestionFragment : Fragment() {
 
             override fun onFinish() {
                 if (binding.textViewTimer.text.equals("0")) {
-                    goToNextQuestion()
+                    if (multiChoice) {
+                        checkForRightOrWrongAnswers()
+                    } else {
+                        markRightAnswer()
+                        goToNextQuestion()
+                    }
                 } else {
                     binding.textViewTimer.text = "15"
                     binding.circularProgressBar.progress =
@@ -237,36 +419,63 @@ class QuestionFragment : Fragment() {
 
     private fun goToNextQuestion() {
         lifecycleScope.launch {
-            markRightAnswer()
             delay(2000)
-            questionViewModel.nextQuestion(QUESTION_NUMBER - 1)
+            if (size > QUESTION_NUMBER - 1) {
+                questionViewModel.nextQuestion(QUESTION_NUMBER - 1)
+            } else {
+                findNavController().popBackStack()
+                findNavController().navigate(R.id.mainMenuFragment)
+            }
         }
     }
 
     private fun markRightAnswer() {
         when (rightAnswer) {
-            "A" -> {
+            answerList[0] -> {
                 binding.buttonOptionA.setBackgroundResource(R.drawable.right_answer_background)
             }
 
-            "B" -> {
+            answerList[1] -> {
                 binding.buttonOptionB.setBackgroundResource(R.drawable.right_answer_background)
             }
 
-            "C" -> {
+            answerList[2] -> {
                 binding.buttonOptionC.setBackgroundResource(R.drawable.right_answer_background)
             }
 
-            "D" -> {
+            answerList[3] -> {
                 binding.buttonOptionD.setBackgroundResource(R.drawable.right_answer_background)
             }
 
-            "E" -> {
+            answerList[4] -> {
                 binding.buttonOptionE.setBackgroundResource(R.drawable.right_answer_background)
             }
 
         }
     }
 
+    private fun ifSelectedAnswerWrong() {
+        when (selectedAnswer) {
+            answerList[0] -> {
+                binding.buttonOptionA.setBackgroundResource(R.drawable.wrong_answer_background)
+            }
+
+            answerList[1] -> {
+                binding.buttonOptionB.setBackgroundResource(R.drawable.wrong_answer_background)
+            }
+
+            answerList[2] -> {
+                binding.buttonOptionC.setBackgroundResource(R.drawable.wrong_answer_background)
+            }
+
+            answerList[3] -> {
+                binding.buttonOptionD.setBackgroundResource(R.drawable.wrong_answer_background)
+            }
+
+            answerList[4] -> {
+                binding.buttonOptionE.setBackgroundResource(R.drawable.wrong_answer_background)
+            }
+        }
+    }
 
 }
