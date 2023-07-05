@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -438,6 +439,7 @@ class QuestionFragment : Fragment() {
         var highScore = sharedPreference.getStringFromSharedPreferences("score")
 
         if (highScore == null || totalScore > highScore.toInt()) {
+            Toast.makeText(context, "New High Score : $totalScore", Toast.LENGTH_SHORT).show()
             sharedPreference.saveStringToSharedPreferences("score", totalScore.toString())
         }
     }
