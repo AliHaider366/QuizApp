@@ -427,16 +427,14 @@ class QuestionFragment : Fragment() {
             if (size > questionNumber - 1) {
                 questionViewModel.nextQuestion(questionNumber - 1)
             } else {
-                //findNavController().popBackStack()
                 checkHighScore()
-                findNavController().popBackStack(R.id.mainMenuFragment, false)
-//                findNavController().navigate(R.id.mainMenuFragment)
+                findNavController().popBackStack()
             }
         }
     }
 
     private fun checkHighScore() {
-        var highScore = sharedPreference.getStringFromSharedPreferences("score")
+        val highScore = sharedPreference.getStringFromSharedPreferences("score")
 
         if (highScore == null || totalScore > highScore.toInt()) {
             Toast.makeText(context, "New High Score : $totalScore", Toast.LENGTH_SHORT).show()
@@ -491,6 +489,11 @@ class QuestionFragment : Fragment() {
                 binding.buttonOptionE.setBackgroundResource(R.drawable.wrong_answer_background)
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        countDownTimer?.cancel()
     }
 
 }

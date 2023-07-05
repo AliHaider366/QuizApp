@@ -9,6 +9,7 @@ import com.example.quizapp.model.QuestionResponse
 import com.example.quizapp.repo.QuizRepo
 import com.example.quizapp.retrofit.QuestionApi
 import com.example.quizapp.retrofit.RetrofitHelper
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -51,13 +52,14 @@ class QuestionViewModel : ViewModel(), Observable {
     }
 
     private fun getQuestions() {
+
         viewModelScope.launch {
             questionResponse = repo.getQuestions()
-            if (questionResponse.body() != null) {
-                questionsList.value = questionResponse.body()!!.questions
-                list.value = questionsList.value!![0]
-            } else {
-
+            if (isActive) {
+                if (questionResponse.body() != null) {
+                    questionsList.value = questionResponse.body()!!.questions
+                    list.value = questionsList.value!![0]
+                }
             }
         }
     }
@@ -72,7 +74,7 @@ class QuestionViewModel : ViewModel(), Observable {
         list.value = questionsList.value!![position]
     }
 
-    fun getSize(): Int{
+    fun getSize(): Int {
         return questionsList.value!!.size
     }
 
