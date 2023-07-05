@@ -6,15 +6,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
 import com.example.quizapp.R
 import com.example.quizapp.databinding.FragmentQuestionBinding
 import com.example.quizapp.model.Question
+import com.example.quizapp.shared.SharedPreference
 import com.example.quizapp.viewmodel.QuestionViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -24,6 +23,8 @@ class QuestionFragment : Fragment() {
     private val binding by lazy {
         FragmentQuestionBinding.inflate(layoutInflater)
     }
+
+    private lateinit var sharedPreference: SharedPreference
 
     lateinit var questionViewModel: QuestionViewModel
 
@@ -43,9 +44,7 @@ class QuestionFragment : Fragment() {
 
     private var size = 0
 
-    companion object {
-        var QUESTION_NUMBER = 1
-    }
+    private var questionNumber = 1
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,15 +53,18 @@ class QuestionFragment : Fragment() {
         binding.circularProgressBar.progress = 100F
         binding.questionviewmodel = questionViewModel
         binding.lifecycleOwner = this
-        answerListHashMap = HashMap()
-        answerList = mutableListOf()
-        rightAnswerList = listOf()
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
+        answerListHashMap = HashMap()
+        answerList = mutableListOf()
+        rightAnswerList = listOf()
+
+        sharedPreference = SharedPreference(requireContext())
 
 
         questionViewModel.list.observe(viewLifecycleOwner) {
@@ -234,7 +236,7 @@ class QuestionFragment : Fragment() {
 
     private fun checkSelection(): Boolean {
         numberOfRightMultiChoiceAnswer--
-        var flag: Boolean = false
+        var flag = false
         if (selectedAnswer in rightAnswer) {
             rightAnswer = rightAnswer.replace(selectedAnswer, "")
             flag = true
@@ -246,6 +248,7 @@ class QuestionFragment : Fragment() {
                 binding.textViewAnswerDecision.setTextColor(resources.getColor(R.color.greenColor))
             }
             if (flag) {
+                totalScore += score
                 goToNextQuestion()
             }
         }
@@ -267,8 +270,8 @@ class QuestionFragment : Fragment() {
     private fun showDataIntoViews(it: Question) {
         addDataToList(it)
         size = questionViewModel.getSize()
-        binding.textViewQuestionNumber.text = "Question $QUESTION_NUMBER of $size"
-        QUESTION_NUMBER++
+        binding.textViewQuestionNumber.text = "Question $questionNumber of $size"
+        questionNumber++
         questionViewModel.question.value = it.question + " (${it.type})"
         questionViewModel.optionA.value = answerList[0]
         questionViewModel.optionB.value = answerList[1]
@@ -300,7 +303,7 @@ class QuestionFragment : Fragment() {
             binding.imageViewImageUrl.visibility = View.VISIBLE
             Glide.with(this).load(it.questionImageUrl).into(binding.imageViewImageUrl)
         }
-        if (multiChoice || size == QUESTION_NUMBER) {
+        if (multiChoice || size == questionNumber) {
             rightAnswer = it.correctAnswer
             addUpAllRightAnswers()
         } else {
@@ -420,12 +423,22 @@ class QuestionFragment : Fragment() {
     private fun goToNextQuestion() {
         lifecycleScope.launch {
             delay(2000)
-            if (size > QUESTION_NUMBER - 1) {
-                questionViewModel.nextQuestion(QUESTION_NUMBER - 1)
+            if (size > questionNumber - 1) {
+                questionViewModel.nextQuestion(questionNumber - 1)
             } else {
-                findNavController().popBackStack()
-                findNavController().navigate(R.id.mainMenuFragment)
+                //findNavController().popBackStack()
+                checkHighScore()
+                findNavController().popBackStack(R.id.mainMenuFragment, false)
+//                findNavController().navigate(R.id.mainMenuFragment)
             }
+        }
+    }
+
+    private fun checkHighScore() {
+        var highScore = sharedPreference.getStringFromSharedPreferences("score")
+
+        if (highScore == null || totalScore > highScore.toInt()) {
+            sharedPreference.saveStringToSharedPreferences("score", totalScore.toString())
         }
     }
 
